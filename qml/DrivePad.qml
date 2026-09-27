@@ -36,7 +36,7 @@ ColumnLayout {
             objectName: "forwardButton"
             text: "▲ W  FWD"
             Layout.preferredWidth: 96
-            enabled: station.armed
+            enabled: station.armed && station.connectionState === "LIVE"
             onPressed: { station.mouseDown(); station.setDrive(1, 1); }
             onReleased: station.stopMouse()
             onCanceled: station.stopMouse()
@@ -47,7 +47,7 @@ ColumnLayout {
         Button {
             text: "◀ A  LEFT"
             Layout.preferredWidth: 84
-            enabled: station.armed
+            enabled: station.armed && station.connectionState === "LIVE"
             onPressed: { station.mouseDown(); station.setDrive(1, 1); }
             onReleased: station.stopMouse()
             onCanceled: station.stopMouse()
@@ -64,7 +64,7 @@ ColumnLayout {
         Button {
             text: "RIGHT  D ▶"
             Layout.preferredWidth: 84
-            enabled: station.armed
+            enabled: station.armed && station.connectionState === "LIVE"
             onPressed: { station.mouseDown(); station.setDrive(1, 1); }
             onReleased: station.stopMouse()
             onCanceled: station.stopMouse()
@@ -75,7 +75,7 @@ ColumnLayout {
         Button {
             text: "▼ S  REV"
             Layout.preferredWidth: 96
-            enabled: station.armed
+            enabled: station.armed && station.connectionState === "LIVE"
             onPressed: { station.mouseDown(); station.setDrive(1, 1); }
             onReleased: station.stopMouse()
             onCanceled: station.stopMouse()

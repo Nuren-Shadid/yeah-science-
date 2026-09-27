@@ -117,12 +117,27 @@ ApplicationWindow {
                 spacing: 8
                 Rectangle {
                     width: 8; height: 8; radius: 4
-                    color: station.connected ? "#00e676" : "#4a5568"
+                    color: {
+                        if (station.connectionState === "LIVE")    return "#00e676"
+                        if (station.connectionState === "WAITING") return "#f3c623"
+                        if (station.connectionState === "STALE")   return "#e63946"
+                        return "#4a5568"
+                    }
                     Layout.alignment: Qt.AlignVCenter
                 }
                 ColumnLayout {
                     spacing: 1
-                    Label { text: station.connected ? "CONNECTED" : "DISCONNECTED"; color: station.connected ? "#00e676" : "#7a8b9e"; font.pixelSize: 11; font.bold: true; font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace" }
+                    Label {
+                        text: station.connectionState
+                        color: {
+                            if (station.connectionState === "LIVE")    return "#00e676"
+                            if (station.connectionState === "WAITING") return "#f3c623"
+                            if (station.connectionState === "STALE")   return "#e63946"
+                            return "#7a8b9e"
+                        }
+                        font.pixelSize: 11; font.bold: true
+                        font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"
+                    }
                     Label { text: station.endpoint; color: "#485b70"; font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"; font.pixelSize: 10 }
                 }
             }
@@ -138,6 +153,8 @@ ApplicationWindow {
 
         RowLayout {
             spacing: 12
+            opacity: station.connectionState === "LIVE" ? 1.0 : 0.35
+            Behavior on opacity { NumberAnimation { duration: 200 } }
             Metric { Layout.fillWidth: true; metricIndex: 1; label: "BATTERY VOLTAGE"; value: station.telemetryData.battery.toFixed(2); unit: "V" }
             Metric { Layout.fillWidth: true; metricIndex: 2; label: "ROVER HEADING"; value: (station.telemetryData.heading * 180 / Math.PI).toFixed(0); unit: "deg" }
             Metric { Layout.fillWidth: true; metricIndex: 3; label: "LEFT WHEEL SPD"; value: station.telemetryData.left.toFixed(2); unit: "m/s" }
@@ -170,7 +187,7 @@ ApplicationWindow {
                         objectName: "armButton"
                         Layout.fillWidth: true
                         text: station.armed ? "Disable Drive Link" : "Enable Drive Link"
-                        enabled: station.connected
+                        enabled: station.connectionState === "LIVE"
                         onClicked: station.toggleArm()
                         focusPolicy: Qt.NoFocus
                     }

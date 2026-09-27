@@ -24,7 +24,7 @@ class Station(QObject):
         super().__init__(parent)
         self.config = config
         self.link = UdpLink(config["station_port"], config["rover_port"])
-        self.telemetry = TelemetryStore()
+        self.telemetry = TelemetryStore(stale_after_ms=config.get("stale_after_ms", 1000))
         self._online = False
         self._armed = False
         self._left = self._right = 0.0
@@ -51,6 +51,7 @@ class Station(QObject):
     txBytes = Property(int, lambda self: self.link.tx, notify=changed)
     invalidPackets = Property(int, lambda self: self._invalid, notify=changed)
     endpoint = Property(str, lambda self: f"127.0.0.1:{self.config['rover_port']}", constant=True)
+    connectionState = Property(str, lambda self: self.telemetry.state, notify=changed)
 
     def note(self, message, warning=False):
         (log.warning if warning else log.info)(message)
@@ -64,6 +65,7 @@ class Station(QObject):
         try:
             self.link.open()
             self._online = True
+            self.telemetry.on_link_opened()
             self.link.send(encode("hello", self._seq))
             self._seq += 1
             self.note("Datalink opened on port " + str(self.config["station_port"]))
@@ -79,6 +81,7 @@ class Station(QObject):
         self._armed = False
         self.link.close()
         self._online = False
+        self.telemetry.on_link_closed()
         self.note("Datalink closed")
         self.changed.emit()
 
@@ -101,6 +104,8 @@ class Station(QObject):
     @Slot(float, float)
     def setDrive(self, left, right):
         if not self._armed or not self._online:
+            return
+        if self.telemetry.state != "LIVE":
             return
         if not (math.isfinite(left) and math.isfinite(right)):
             return
@@ -139,7 +144,7 @@ class Station(QObject):
             return
         if direction not in self._held_keys:
             self._held_keys.add(direction)
-            if not self._mouse_active:
+            if not self._mouse_active and self.telemetry.state == "LIVE":
                 self._recompute_drive()
 
     @Slot(str)
@@ -209,6 +214,11 @@ class Station(QObject):
                         self.note("First rover telemetry received")
             if self._armed:
                 self._send_drive()
+        if self.telemetry.tick():
+            print(">>> TRANSITION to STALE at", time.monotonic())
+            self.note("Telemetry stale — no valid packet within threshold", True)
+            self.stop()
+        print("STATE:", self.telemetry.state, "| received_at:", self.telemetry.received_at)
         self.changed.emit()
 
     @Slot()
