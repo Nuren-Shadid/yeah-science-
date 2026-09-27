@@ -30,6 +30,8 @@ class Station(QObject):
         self._left = self._right = 0.0
         self._speed = config["drive_speed"]
         self._seq = 0
+        self._held_keys = set()
+        self._mouse_active = False
         self._events = []
         self._invalid = 0
         self._timer = QTimer(self)
@@ -107,6 +109,61 @@ class Station(QObject):
         self._send_drive()
         self.changed.emit()
 
+    _KEY_MAP = {
+    "W": "forward", "Up": "forward",
+    "S": "backward", "Down": "backward",
+    "A": "left", "Left": "left",
+    "D": "right", "Right": "right",
+    }
+
+    @Slot()
+    def mouseDown(self):
+        self._mouse_active = True
+
+    @Slot()
+    def stopMouse(self):
+        self._mouse_active = False
+        if self._held_keys:
+            self._recompute_drive()
+        else:
+            self.stop()
+
+    @staticmethod
+    def _key_to_direction(key):
+        return Station._KEY_MAP.get(key)
+
+    @Slot(str)
+    def keyDown(self, key):
+        direction = Station._key_to_direction(key)
+        if direction is None:
+            return
+        if direction not in self._held_keys:
+            self._held_keys.add(direction)
+            if not self._mouse_active:
+                self._recompute_drive()
+
+    @Slot(str)
+    def keyUp(self, key):
+        direction = Station._key_to_direction(key)
+        if direction is None:
+            return
+        if direction in self._held_keys:
+            self._held_keys.discard(direction)
+            if not self._mouse_active:
+                self._recompute_drive()
+
+    def _recompute_drive(self):
+        fwd = (1 if "forward" in self._held_keys else 0) - (1 if "backward" in self._held_keys else 0)
+        rot = (1 if "left" in self._held_keys else 0) - (1 if "right" in self._held_keys else 0)
+
+        left  = max(-1.0, min(1.0, fwd - rot))
+        right = max(-1.0, min(1.0, fwd + rot))
+
+        if left == 0.0 and right == 0.0:
+            self.stop()
+        else:
+            self.setDrive(left, right)
+
     def _send_drive(self):
         if not self._online:
             return
@@ -122,9 +179,11 @@ class Station(QObject):
 
     @Slot()
     def stop(self):
-        self._left = self._right = 0.0
-        self._send_drive()
-        self.changed.emit()
+            self._held_keys.clear()
+            self._mouse_active = False
+            self._left = self._right = 0.0
+            self._send_drive()
+            self.changed.emit()
 
     @Slot()
     def tick(self):

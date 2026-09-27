@@ -37,9 +37,10 @@ ColumnLayout {
             text: "▲ W  FWD"
             Layout.preferredWidth: 96
             enabled: station.armed
-            onPressed: station.setDrive(1, 1)
-            onReleased: station.stop()
-            onCanceled: station.stop()
+            onPressed: { station.mouseDown(); station.setDrive(1, 1); }
+            onReleased: station.stopMouse()
+            onCanceled: station.stopMouse()
+            focusPolicy: Qt.NoFocus
         }
         Item { Layout.preferredWidth: 72 }
 
@@ -47,9 +48,10 @@ ColumnLayout {
             text: "◀ A  LEFT"
             Layout.preferredWidth: 84
             enabled: station.armed
-            onPressed: station.setDrive(-1, 1)
-            onReleased: station.stop()
-            onCanceled: station.stop()
+            onPressed: { station.mouseDown(); station.setDrive(1, 1); }
+            onReleased: station.stopMouse()
+            onCanceled: station.stopMouse()
+            focusPolicy: Qt.NoFocus
         }
         Button {
             text: "✖ STOP"
@@ -57,14 +59,16 @@ ColumnLayout {
             palette.button: "#e63946"
             palette.buttonText: "#ffffff"
             onClicked: station.stop()
+            focusPolicy: Qt.NoFocus
         }
         Button {
             text: "RIGHT  D ▶"
             Layout.preferredWidth: 84
             enabled: station.armed
-            onPressed: station.setDrive(1, -1)
-            onReleased: station.stop()
-            onCanceled: station.stop()
+            onPressed: { station.mouseDown(); station.setDrive(1, 1); }
+            onReleased: station.stopMouse()
+            onCanceled: station.stopMouse()
+            focusPolicy: Qt.NoFocus
         }
 
         Item { Layout.preferredWidth: 72 }
@@ -72,9 +76,10 @@ ColumnLayout {
             text: "▼ S  REV"
             Layout.preferredWidth: 96
             enabled: station.armed
-            onPressed: station.setDrive(-1, -1)
-            onReleased: station.stop()
-            onCanceled: station.stop()
+            onPressed: { station.mouseDown(); station.setDrive(1, 1); }
+            onReleased: station.stopMouse()
+            onCanceled: station.stopMouse()
+            focusPolicy: Qt.NoFocus
         }
         Item { Layout.preferredWidth: 72 }
     }
@@ -92,6 +97,7 @@ ColumnLayout {
             Layout.fillWidth: true
             from: 0.1; to: 1.0; value: station.speed
             onMoved: station.setSpeed(value)
+            focusPolicy: Qt.NoFocus
         }
         Label {
             text: Math.round(station.speed * 100) + "%"
@@ -125,8 +131,8 @@ ColumnLayout {
         border.width: 1
         Label {
             anchors.centerIn: parent
-            text: "[ TASK ] KEYBOARD TELEOP: AWAITING IMPLEMENTATION"
-            color: "#f3c623"
+            text: "[ OK ] KEYBOARD TELEOP: W/A/S/D + ARROWS ACTIVE"
+            color: "#00e676"
             font.pixelSize: 9
             font.bold: true
             font.family: Qt.platform.os === "windows" ? "Consolas" : "monospace"

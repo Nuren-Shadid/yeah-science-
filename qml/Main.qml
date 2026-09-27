@@ -14,7 +14,66 @@ ApplicationWindow {
     palette.text: "#dce5ef"
     palette.base: "#0f151d"
     font.family: "Segoe UI"
-    onActiveChanged: if (!active) station.stop()
+    Component.onCompleted: {        
+        function walk(item) {
+            if (!item) return;
+            if (item.toString().indexOf("QQuickButton") !== -1 ||
+                item.toString().indexOf("QQuickSlider") !== -1) {
+                item.focusPolicy = Qt.NoFocus;
+            }
+            for (var i = 0; i < item.children.length; i++) {
+                walk(item.children[i]);
+            }
+        }
+        walk(contentItem);
+    }
+    onActiveChanged: {
+        if (active) keyCatcher.forceActiveFocus()
+        else station.stop()
+    }
+
+    Item {
+        id: keyCatcher
+        focus: true
+        width: 0; height: 0
+        function keyName(qtKey) {
+            switch (qtKey) {
+                case Qt.Key_W: return "W";
+                case Qt.Key_S: return "S";
+                case Qt.Key_A: return "A";
+                case Qt.Key_D: return "D";
+                case Qt.Key_Up: return "Up";
+                case Qt.Key_Down: return "Down";
+                case Qt.Key_Left: return "Left";
+                case Qt.Key_Right: return "Right";
+                default: return "";
+            }
+        }
+
+        Keys.onPressed: (event) => {
+            if (event.isAutoRepeat) return;
+            var k = keyName(event.key);
+            if (k !== "") {
+                station.keyDown(k);
+                event.accepted = true;
+            }
+        }
+
+        Keys.onReleased: (event) => {
+            if (event.isAutoRepeat) return;
+            var k = keyName(event.key);
+            if (k !== "") {
+                station.keyUp(k);
+                event.accepted = true;
+            }
+        }
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        z: -1
+        onClicked: keyCatcher.forceActiveFocus()
+    }
 
     ColumnLayout {
         anchors.fill: parent; anchors.margins: 18; spacing: 12
@@ -72,6 +131,7 @@ ApplicationWindow {
                 objectName: "connectButton"
                 text: station.connected ? "Disconnect" : "Connect Link"
                 onClicked: station.connected ? station.disconnectLink() : station.connectLink()
+                focusPolicy: Qt.NoFocus
             }
             Button { text: "Session Notes"; onClicked: settings.open() }
         }
@@ -112,6 +172,7 @@ ApplicationWindow {
                         text: station.armed ? "Disable Drive Link" : "Enable Drive Link"
                         enabled: station.connected
                         onClicked: station.toggleArm()
+                        focusPolicy: Qt.NoFocus
                     }
                     DrivePad { Layout.fillWidth: true }
                     Item { Layout.fillHeight: true }
@@ -141,4 +202,9 @@ ApplicationWindow {
     }
 
     SettingsPanel { id: settings }
+
+    Connections {
+        target: settings
+        function onClosed() { keyCatcher.forceActiveFocus() }
+    }
 }
